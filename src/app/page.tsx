@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 export default function Home() {
   const [url, setUrl] = useState('');
+
+  // Define the Listing interface
   interface Listing {
     id: string;
     url: string;
@@ -12,9 +15,28 @@ export default function Home() {
     previousprice: string;
     firstprice: string;
     lastcheck: string;
+    imageurl: string; // Add imageurl to the interface
   }
 
   const [listings, setListings] = useState<Listing[]>([]);
+
+  // Fetch all listings when the component mounts
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const response = await fetch('/api/scrape');
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        setListings(data.listings);
+      } catch (error) {
+        console.error('Error fetching listings:', error);
+      }
+    };
+
+    fetchListings();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleScrape = async () => {
     if (!url) {
@@ -64,6 +86,7 @@ export default function Home() {
       <table>
         <thead>
           <tr>
+            <th></th>
             <th>Title</th>
             <th>Current Price</th>
             <th>Previous Price</th>
@@ -74,6 +97,15 @@ export default function Home() {
         <tbody>
           {listings.map((listing) => (
             <tr key={listing.id}>
+              <td>
+                <Image
+                  width={75}
+                  height={75}
+                  src={listing.imageurl || 'https://placehold.co/600x400'} // Use the scraped image URL or a placeholder
+                  alt={listing.title}
+                  unoptimized
+                />
+              </td>
               <td>
                 <a href={listing.url} target="_blank" rel="noopener noreferrer">
                   {listing.title}
