@@ -60,6 +60,27 @@ export default function Home() {
     }
   };
 
+  // Function to delete an entry
+  const handleDelete = async (id: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this listing?');
+    if (!confirmDelete) return;
+
+    try {
+      const response: Response = await fetch(`/api/delete?id=${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Remove the deleted listing from the state
+      setListings((prevListings) => prevListings.filter((listing) => listing.id !== id));
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      alert('An error occurred while deleting the listing.');
+    }
+  };
+
   // Function to format the date
   const formatDate = (dateString: string | number | Date) => {
     const date = new Date(dateString);
@@ -73,7 +94,7 @@ export default function Home() {
   };
 
   return (
-    <div>
+    <div className='w-full'>
       <h1>Marktplaats Scraper</h1>
       <input
         type="text"
@@ -81,28 +102,30 @@ export default function Home() {
         onChange={(e) => setUrl(e.target.value)}
         placeholder="Enter Marktplaats URL"
       />
-      <button onClick={handleScrape}>Scrape Data</button>
+      <button onClick={handleScrape} className='bg-green-400 rounded-lg p-2'>Scrape Data</button>
 
-      <table>
+      <table className='w-full'>
         <thead>
-          <tr>
+          <tr className='text-left bg-gray-400'>
             <th></th>
             <th>Title</th>
             <th>Current Price</th>
             <th>Previous Price</th>
             <th>First Price</th>
             <th>Last Check</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {listings.map((listing) => (
-            <tr key={listing.id}>
+            <tr key={listing.id} className='border-b even:bg-gray-100 odd:bg-alternate'>
               <td>
                 <Image
                   width={75}
-                  height={75}
+                  height={50}
                   src={listing.imageurl || 'https://placehold.co/600x400'} // Use the scraped image URL or a placeholder
                   alt={listing.title}
+                  className='rounded-lg p-1'
                   unoptimized
                 />
               </td>
@@ -115,6 +138,9 @@ export default function Home() {
               <td>{listing.previousprice}</td>
               <td>{listing.firstprice}</td>
               <td>{formatDate(listing.lastcheck)}</td>
+              <td>
+                <button onClick={() => handleDelete(listing.id)}>X</button>
+              </td>
             </tr>
           ))}
         </tbody>

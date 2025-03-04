@@ -16,6 +16,23 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Marktplaats Scraper",
   description: "Monitor Marktplaats listings for price changes",
+  icons: [
+    {
+      rel: 'icon',
+      type: 'image/gif',
+      url: '/favicon.gif', // Animated favicon
+    },
+    {
+      rel: 'icon',
+      type: 'image/webp',
+      url: '/favicon.webp', // Animated favicon
+    },
+    // {
+    //   rel: 'icon',
+    //   type: 'image/x-icon',
+    //   url: '/favicon.ico', // Fallback static favicon
+    // },
+  ],
 };
 
 export default function RootLayout({
