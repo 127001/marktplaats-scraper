@@ -18,6 +18,8 @@ export default function Home() {
     firstprice: string;
     lastcheck: string;
     imageurl: string; // Add imageurl to the interface
+    publishingdate: string; // Add publishingdate to the interface
+    isoffline: boolean; // Add isoffline to the interface
   }
 
 
@@ -144,6 +146,7 @@ export default function Home() {
           <tr className='text-left bg-gray-400'>
             <th></th>
             <th>Title</th>
+            <th>Publishing Date</th>
             <th>Current Price</th>
             <th>Previous Price</th>
             <th>First Price</th>
@@ -153,7 +156,12 @@ export default function Home() {
         </thead>
         <tbody>
           {listings.map((listing) => (
-            <tr key={listing.id} className='border-b even:bg-gray-100 odd:bg-alternate'>
+            <tr
+              key={listing.id}
+              className={`border-b even:bg-gray-100 odd:bg-alternate ${
+                listing.currentprice === 'Gereserveerd' ? 'bg-yellow-100' : ''
+              } ${listing.isoffline ? 'bg-red-100' : ''}`}
+            >
               <td>
                 <Image
                   width={75}
@@ -169,12 +177,13 @@ export default function Home() {
                   {listing.title}
                 </a>
               </td>
+              <td>{listing.publishingdate ? new Date(listing.publishingdate).toLocaleString() : 'N/A'}</td>
               <td>{listing.currentprice}</td>
               <td>{listing.previousprice}</td>
               <td>{listing.firstprice}</td>
               <td>{formatDate(listing.lastcheck)}</td>
               <td>
-                <button className='hover:underline hover:cursor-pointer' onClick={() => handleDelete(listing.id)}>X</button>
+                <button className='text-red-600 hover:underline hover:cursor-pointer' onClick={() => handleDelete(listing.id)}>X</button>
               </td>
             </tr>
           ))}

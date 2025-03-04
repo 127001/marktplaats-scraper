@@ -11,6 +11,37 @@ const pool = new Pool({
   },
 });
 
+// Helper function to parse the date string (e.g., "22 feb. '25, 20:19")
+const parsePublishingDate = (dateString) => {
+  if (!dateString) return null;
+
+  // Replace abbreviated month names with full names
+  const monthMap = {
+    jan: 'January',
+    feb: 'February',
+    mrt: 'March',
+    apr: 'April',
+    mei: 'May',
+    jun: 'June',
+    jul: 'July',
+    aug: 'August',
+    sep: 'September',
+    okt: 'October',
+    nov: 'November',
+    dec: 'December',
+  };
+
+  // Extract the month abbreviation and replace it with the full name
+  const monthAbbr = dateString.match(/[a-zA-Z]{3}/)?.[0]?.toLowerCase();
+  if (monthAbbr && monthMap[monthAbbr]) {
+    dateString = dateString.replace(monthAbbr, monthMap[monthAbbr]);
+  }
+
+  // Parse the date string into a Date object
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? null : date.toISOString();
+};
+
 export async function GET() {
   try {
     const client = await pool.connect();
@@ -20,6 +51,9 @@ export async function GET() {
 
     for (const listing of listings.rows) {
       try {
+        // Skip updating offline ads
+        if (listing.isoffline) continue;
+
         // Fetch the HTML content of the page
         const { data } = await axios.get(listing.url);
 
@@ -32,6 +66,14 @@ export async function GET() {
 
         // Extract the first image URL from div.carousel
         const imageUrl = $('img.HeroImage-image').first().attr('src') || '';
+
+        // Extract the publishing date from span.Stats-summary
+        const publishingDateString = $('span.Stats-summary').text().trim();
+        const publishingDate = parsePublishingDate(publishingDateString);
+        console.log('dates ', publishingDateString, publishingDate);
+
+        // Check if the ad is offline (price and image are missing)
+        const isOffline = !price && !imageUrl;
 
         // Get the current timestamp
         const lastCheck = new Date().toISOString();
@@ -47,8 +89,10 @@ export async function GET() {
               currentPrice = $2, 
               previousPrice = $3, 
               lastCheck = $4, 
-              imageurl = $5
-            WHERE id = $6
+              imageurl = $5,
+              publishingDate = $6,
+              isOffline = $7
+            WHERE id = $8
           `,
             [
               title,
@@ -56,19 +100,23 @@ export async function GET() {
               listing.currentprice, // Move current price to previous price
               lastCheck,
               imageUrl,
+              publishingDate,
+              isOffline,
               listing.id,
             ]
           );
         } else {
-          // If the price hasn't changed, only update the lastCheck timestamp
+          // If the price hasn't changed, only update the lastCheck timestamp and publishingDate
           await client.query(
             `
             UPDATE listings
             SET 
-              lastCheck = $1
-            WHERE id = $2
+              lastCheck = $1,
+              publishingDate = $2,
+              isOffline = $3
+            WHERE id = $4
           `,
-            [lastCheck, listing.id]
+            [lastCheck, publishingDate, isOffline, listing.id]
           );
         }
       } catch (error) {
