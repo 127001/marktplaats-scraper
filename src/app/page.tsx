@@ -4,7 +4,17 @@ import { useState } from 'react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
-  const [listings, setListings] = useState([]);
+  interface Listing {
+    id: string;
+    url: string;
+    title: string;
+    currentprice: string;
+    previousprice: string;
+    firstprice: string;
+    lastcheck: string;
+  }
+
+  const [listings, setListings] = useState<Listing[]>([]);
 
   const handleScrape = async () => {
     if (!url) {
@@ -29,7 +39,7 @@ export default function Home() {
   };
 
   // Function to format the date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | number | Date) => {
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
