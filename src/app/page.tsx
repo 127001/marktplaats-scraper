@@ -5,6 +5,8 @@ import Image from 'next/image';
 
 export default function Home() {
   const [url, setUrl] = useState('');
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Define the Listing interface
   interface Listing {
@@ -18,7 +20,7 @@ export default function Home() {
     imageurl: string; // Add imageurl to the interface
   }
 
-  const [listings, setListings] = useState<Listing[]>([]);
+
 
   // Fetch all listings when the component mounts
   useEffect(() => {
@@ -81,6 +83,32 @@ export default function Home() {
     }
   };
 
+  // Function to update the listings 
+  const handleUpdateListings = async () => {
+    setIsUpdating(true);
+
+    try {
+      // Call the update-listings API
+      const response = await fetch('/api/update-listings');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Fetch the updated listings
+      const scrapeResponse = await fetch('/api/scrape?url='); // Fetch all listings
+      if (!scrapeResponse.ok) {
+        throw new Error(`HTTP error! Status: ${scrapeResponse.status}`);
+      }
+      const data = await scrapeResponse.json();
+      setListings(data.listings);
+    } catch (error) {
+      console.error('Error updating listings:', error);
+      alert('An error occurred while updating listings.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   // Function to format the date
   const formatDate = (dateString: string | number | Date) => {
     const date = new Date(dateString);
@@ -95,14 +123,21 @@ export default function Home() {
 
   return (
     <div className='w-full'>
-      <h1>Marktplaats Scraper</h1>
-      <input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Enter Marktplaats URL"
-      />
-      <button onClick={handleScrape} className='bg-green-400 rounded-lg p-2'>Scrape Data</button>
+      <h1 className='text-center text-2xl'>Marktplaats Scraper</h1>
+      <div className='grid grid-cols-6 gap-4 mb-2 p-2'>
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Enter Marktplaats URL"
+          className='col-span-4'
+        />
+        <button onClick={handleScrape} className='bg-green-400 rounded-lg p-2'>Check prices</button>
+
+        <button onClick={handleUpdateListings} disabled={isUpdating} className='bg-blue-400 rounded-lg p-2'>
+          {isUpdating ? 'Updating...' : 'Update Listings'}
+        </button>
+      </div>
 
       <table className='w-full'>
         <thead>
@@ -139,7 +174,7 @@ export default function Home() {
               <td>{listing.firstprice}</td>
               <td>{formatDate(listing.lastcheck)}</td>
               <td>
-                <button onClick={() => handleDelete(listing.id)}>X</button>
+                <button className='hover:underline hover:cursor-pointer' onClick={() => handleDelete(listing.id)}>X</button>
               </td>
             </tr>
           ))}
@@ -148,3 +183,5 @@ export default function Home() {
     </div>
   );
 }
+
+

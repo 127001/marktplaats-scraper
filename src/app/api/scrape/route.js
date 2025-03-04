@@ -19,7 +19,7 @@ export async function GET(request) {
     const client = await pool.connect();
 
     if (url) {
-      // Scrape data and update the database
+      // Scrape data for the provided URL
       const { data } = await axios.get(url);
       const $ = load(data);
 
@@ -40,15 +40,29 @@ export async function GET(request) {
       );
 
       if (existingListing.rows.length > 0) {
-        // Update the existing record
-        await client.query(
-          `
-          UPDATE listings
-          SET title = $1, currentPrice = $2, previousPrice = $3, lastCheck = $4, imageurl = $5
-          WHERE url = $6
-        `,
-          [title, price, existingListing.rows[0].currentprice, lastCheck, imageUrl, url]
-        );
+        // Update the existing record only if the price has changed
+        if (price !== existingListing.rows[0].currentprice) {
+          await client.query(
+            `
+            UPDATE listings
+            SET 
+              title = $1, 
+              currentPrice = $2, 
+              previousPrice = $3, 
+              lastCheck = $4, 
+              imageurl = $5
+            WHERE url = $6
+          `,
+            [
+              title,
+              price,
+              existingListing.rows[0].currentprice, // Move current price to previous price
+              lastCheck,
+              imageUrl,
+              url,
+            ]
+          );
+        }
       } else {
         // Insert a new record
         await client.query(
@@ -61,7 +75,7 @@ export async function GET(request) {
       }
     }
 
-    // Fetch all listings
+    // Fetch all listings to return
     const listings = await client.query('SELECT * FROM listings');
     client.release();
 
