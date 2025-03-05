@@ -132,7 +132,7 @@ export default function Home() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter Marktplaats URL"
-          className='col-span-4'
+          className='col-span-4 border-2 border-gray-400 p-2 rounded-lg'
         />
         <button onClick={handleScrape} className='bg-green-400 rounded-lg p-2'>Check prices</button>
 

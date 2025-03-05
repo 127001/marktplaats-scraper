@@ -3,6 +3,20 @@ import axios from 'axios';
 import { load } from 'cheerio';
 import { Pool } from 'pg';
 
+// Define the structure of a listing
+interface Listing {
+  id?: number;
+  url: string;
+  title: string;
+  currentPrice: string;
+  previousPrice: string | null;
+  firstPrice: string;
+  lastCheck: string;
+  imageurl: string;
+  publishingDate: string | null;
+  isOffline: boolean;
+}
+
 // Create a connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -12,11 +26,11 @@ const pool = new Pool({
 });
 
 // Helper function to parse the date string (e.g., "22 feb. '25, 20:19")
-const parsePublishingDate = (dateString) => {
+const parsePublishingDate = (dateString: string | undefined): string | null => {
   if (!dateString) return null;
 
   // Replace abbreviated month names with full names
-  const monthMap = {
+  const monthMap: { [key: string]: string } = {
     jan: 'January',
     feb: 'February',
     mrt: 'March',
@@ -42,7 +56,7 @@ const parsePublishingDate = (dateString) => {
   return isNaN(date.getTime()) ? null : date.toISOString();
 };
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
 
@@ -72,14 +86,14 @@ export async function GET(request) {
       const lastCheck = new Date().toISOString();
 
       // Check if the URL already exists in the database
-      const existingListing = await client.query(
+      const existingListing = await client.query<Listing>(
         'SELECT * FROM listings WHERE url = $1',
         [url]
       );
 
       if (existingListing.rows.length > 0) {
         // Update the existing record only if the price has changed and the ad is not offline
-        if (price !== existingListing.rows[0].currentprice && !existingListing.rows[0].isoffline) {
+        if (price !== existingListing.rows[0].currentPrice && !existingListing.rows[0].isOffline) {
           await client.query(
             `
             UPDATE listings
@@ -96,7 +110,7 @@ export async function GET(request) {
             [
               title,
               price,
-              existingListing.rows[0].currentprice, // Move current price to previous price
+              existingListing.rows[0].currentPrice, // Move current price to previous price
               lastCheck,
               imageUrl,
               publishingDate,
@@ -118,7 +132,7 @@ export async function GET(request) {
     }
 
     // Fetch all listings to return
-    const listings = await client.query('SELECT * FROM listings');
+    const listings = await client.query<Listing>('SELECT * FROM listings');
     client.release();
 
     return NextResponse.json({ listings: listings.rows });

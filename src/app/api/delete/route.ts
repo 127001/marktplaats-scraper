@@ -9,7 +9,7 @@ const pool = new Pool({
   },
 });
 
-export async function DELETE(request) {
+export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 

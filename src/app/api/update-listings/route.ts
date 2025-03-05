@@ -3,6 +3,20 @@ import axios from 'axios';
 import { load } from 'cheerio';
 import { Pool } from 'pg';
 
+// Define the structure of a listing
+interface Listing {
+  id: number;
+  url: string;
+  title: string;
+  currentPrice: string;
+  previousPrice: string | null;
+  firstPrice: string;
+  lastCheck: string;
+  imageurl: string;
+  publishingDate: string | null;
+  isOffline: boolean;
+}
+
 // Create a connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -12,11 +26,11 @@ const pool = new Pool({
 });
 
 // Helper function to parse the date string (e.g., "22 feb. '25, 20:19")
-const parsePublishingDate = (dateString) => {
+const parsePublishingDate = (dateString: string | undefined): string | null => {
   if (!dateString) return null;
 
   // Replace abbreviated month names with full names
-  const monthMap = {
+  const monthMap: { [key: string]: string } = {
     jan: 'January',
     feb: 'February',
     mrt: 'March',
@@ -47,12 +61,12 @@ export async function GET() {
     const client = await pool.connect();
 
     // Fetch all listings from the database
-    const listings = await client.query('SELECT * FROM listings');
+    const listings = await client.query<Listing>('SELECT * FROM listings');
 
     for (const listing of listings.rows) {
       try {
         // Skip updating offline ads
-        if (listing.isoffline) continue;
+        if (listing.isOffline) continue;
 
         // Fetch the HTML content of the page
         const { data } = await axios.get(listing.url);
@@ -79,7 +93,7 @@ export async function GET() {
         const lastCheck = new Date().toISOString();
 
         // Compare the scraped price with the current price in the database
-        if (price !== listing.currentprice) {
+        if (price !== listing.currentPrice) {
           // If the price has changed, update the price fields and lastCheck
           await client.query(
             `
@@ -97,7 +111,7 @@ export async function GET() {
             [
               title,
               price,
-              listing.currentprice, // Move current price to previous price
+              listing.currentPrice, // Move current price to previous price
               lastCheck,
               imageUrl,
               publishingDate,
@@ -125,7 +139,7 @@ export async function GET() {
     }
 
     // Fetch all listings to return
-    const updatedListings = await client.query('SELECT * FROM listings');
+    const updatedListings = await client.query<Listing>('SELECT * FROM listings');
     client.release();
 
     return NextResponse.json({ listings: updatedListings.rows });
