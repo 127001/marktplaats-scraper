@@ -113,7 +113,3 @@ The app is deployed on [Vercel](https://vercel.com). To deploy your own version:
 2. Connect the repository to Vercel.
 3. Add the ```DATABASE_URL``` environment variable in the Vercel dashboard.
 4. Deploy the app.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
