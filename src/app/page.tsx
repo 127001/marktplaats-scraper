@@ -158,9 +158,9 @@ export default function Home() {
           {listings.map((listing) => (
             <tr
               key={listing.id}
-              className={`border-b even:bg-gray-100 odd:bg-alternate ${
-                listing.currentprice === 'Gereserveerd' ? 'bg-yellow-100' : ''
-              } ${listing.isoffline ? 'bg-red-100' : ''}`}
+              className={`border-b bg-gray-100 odd:bg-alternate ${
+                listing.currentprice === 'Gereserveerd' ? 'bg-yellow-100 odd:bg-yellow-100' : ''
+              } ${listing.isoffline ? 'bg-red-100 odd:bg-red-100' : ''}`}
             >
               <td>
                 <Image
