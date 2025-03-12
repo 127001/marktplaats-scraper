@@ -8,13 +8,14 @@ interface Listing {
   id: number;
   url: string;
   title: string;
-  currentPrice: string;
-  previousPrice: string | null;
-  firstPrice: string;
-  lastCheck: string;
-  imageurl: string;
-  publishingDate: string | null;
-  isOffline: boolean;
+  currentPrice: string; // camelCase
+  previousPrice: string | null; // camelCase
+  firstPrice: string; // camelCase
+  lastCheck: string; // camelCase
+  imageUrl: string; // camelCase
+  publishingDate: string | null; // camelCase
+  isOffline: boolean; // camelCase
+  highestBid: string | null; // camelCase (added based on your column names)
 }
 
 // Create a connection pool
@@ -60,13 +61,33 @@ export async function GET() {
   try {
     const client = await pool.connect();
 
-    // Fetch all listings from the database
-    const listings = await client.query<Listing>('SELECT * FROM listings');
+    // Fetch all listings from the database with column aliasing
+    const listings = await client.query<Listing>(`
+      SELECT 
+        id,
+        url,
+        title,
+        currentprice AS "currentPrice",
+        previousprice AS "previousPrice",
+        firstprice AS "firstPrice",
+        lastcheck AS "lastCheck",
+        imageurl AS "imageUrl",
+        publishingdate AS "publishingDate",
+        isoffline AS "isOffline",
+        highestbid AS "highestBid"
+      FROM listings
+    `);
+
+    // Log the fetched listings for debugging
+    console.log('Fetched listings:', listings.rows);
 
     for (const listing of listings.rows) {
       try {
         // Skip updating offline ads
-        if (listing.isOffline) continue;
+        if (listing.isOffline) {
+          console.log(`Skipping offline listing ${listing.id}`);
+          continue;
+        }
 
         // Fetch the HTML content of the page
         const { data } = await axios.get(listing.url);
@@ -81,10 +102,9 @@ export async function GET() {
         // Extract the first image URL from div.carousel
         const imageUrl = $('img.HeroImage-image').first().attr('src') || '';
 
-        // Extract the publishing date from span.Stats-summary
-        const publishingDateString = $('span.Stats-summary').text().trim();
+        // Extract the publishing date from the third span.Stats-summary element
+        const publishingDateString = $('span.Stats-summary').eq(2).text().trim() || undefined;
         const publishingDate = parsePublishingDate(publishingDateString);
-        console.log('dates ', publishingDateString, publishingDate);
 
         // Check if the ad is offline (price and image are missing)
         const isOffline = !price && !imageUrl;
@@ -92,20 +112,25 @@ export async function GET() {
         // Get the current timestamp
         const lastCheck = new Date().toISOString();
 
+        // Log the current and scraped prices for debugging
+        console.log(`Listing ${listing.id}: Current Price = ${listing.currentPrice}, Scraped Price = ${price}`);
+
         // Compare the scraped price with the current price in the database
         if (price !== listing.currentPrice) {
           // If the price has changed, update the price fields and lastCheck
+          console.log(`Price changed for listing ${listing.id}. Updating previousPrice to ${listing.currentPrice} and currentPrice to ${price}`);
+
           await client.query(
             `
             UPDATE listings
             SET 
               title = $1, 
-              currentPrice = $2, 
-              previousPrice = $3, 
-              lastCheck = $4, 
-              imageurl = $5,
-              publishingDate = $6,
-              isOffline = $7
+              currentprice = $2, 
+              previousprice = $3, 
+              lastcheck = $4, 
+              image = $5,
+              publishingdate = $6,
+              isoffline = $7
             WHERE id = $8
           `,
             [
@@ -121,13 +146,15 @@ export async function GET() {
           );
         } else {
           // If the price hasn't changed, only update the lastCheck timestamp and publishingDate
+          console.log(`Price unchanged for listing ${listing.id}. Only updating lastCheck and publishingDate.`);
+
           await client.query(
             `
             UPDATE listings
             SET 
-              lastCheck = $1,
-              publishingDate = $2,
-              isOffline = $3
+              lastcheck = $1,
+              publishingdate = $2,
+              isoffline = $3
             WHERE id = $4
           `,
             [lastCheck, publishingDate, isOffline, listing.id]
