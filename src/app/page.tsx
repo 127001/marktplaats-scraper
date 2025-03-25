@@ -3,35 +3,32 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
+interface Listing {
+  id: string;
+  url: string;
+  title: string;
+  currentprice: string;
+  previousprice: string;
+  firstprice: string;
+  lastcheck: string;
+  imageurl: string;
+  publishingdate: string;
+  isoffline: boolean;
+}
+
 export default function Home() {
   const [url, setUrl] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showOffline, setShowOffline] = useState(false); // New state for filtering
 
-  // Define the Listing interface
-  interface Listing {
-    id: string;
-    url: string;
-    title: string;
-    currentprice: string;
-    previousprice: string;
-    firstprice: string;
-    lastcheck: string;
-    imageurl: string; // Add imageurl to the interface
-    publishingdate: string; // Add publishingdate to the interface
-    isoffline: boolean; // Add isoffline to the interface
-  }
-
-
-
-  // Fetch all listings when the component mounts
+  // Fetch all listings when the component mounts or when showOffline changes
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await fetch('/api/scrape');
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        const endpoint = showOffline ? '/api/scrape' : '/api/scrape?active=true';
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         setListings(data.listings);
       } catch (error) {
@@ -40,7 +37,7 @@ export default function Home() {
     };
 
     fetchListings();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, [showOffline]);
 
   const handleScrape = async () => {
     if (!url) {
@@ -50,13 +47,9 @@ export default function Home() {
 
     try {
       const response = await fetch(`/api/scrape?url=${encodeURIComponent(url)}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       setListings(data.listings);
-
-      // Clear the input field
       setUrl('');
     } catch (error) {
       console.error('Error scraping data:', error);
@@ -64,45 +57,33 @@ export default function Home() {
     }
   };
 
-  // Function to delete an entry
   const handleDelete = async (id: string) => {
-    const confirmDelete = window.confirm('Are you sure you want to delete this listing?');
-    if (!confirmDelete) return;
+    if (!window.confirm('Are you sure you want to delete this listing?')) return;
 
     try {
-      const response: Response = await fetch(`/api/delete?id=${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      // Remove the deleted listing from the state
-      setListings((prevListings) => prevListings.filter((listing) => listing.id !== id));
+      const response = await fetch(`/api/delete?id=${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      setListings(prev => prev.filter(listing => listing.id !== id));
     } catch (error) {
       console.error('Error deleting listing:', error);
       alert('An error occurred while deleting the listing.');
     }
   };
 
-  // Function to update the listings 
   const handleUpdateListings = async () => {
     setIsUpdating(true);
-
     try {
-      // Call the update-listings API
-      const response = await fetch('/api/update-listings');
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      // Fetch the updated listings
-      const scrapeResponse = await fetch('/api/scrape?url='); // Fetch all listings
-      if (!scrapeResponse.ok) {
-        throw new Error(`HTTP error! Status: ${scrapeResponse.status}`);
-      }
-      const data = await scrapeResponse.json();
+      await fetch('/api/update-listings');
+      const response = await fetch(showOffline ? '/api/scrape' : '/api/scrape?active=true');
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      const data = await response.json();
       setListings(data.listings);
+      
+      // Show notification if any ads went offline
+      const offlineCount = data.listings.filter((l: Listing) => l.isoffline).length;
+      if (offlineCount > 0) {
+        alert(`${offlineCount} ads have been marked as offline`);
+      }
     } catch (error) {
       console.error('Error updating listings:', error);
       alert('An error occurred while updating listings.');
@@ -111,86 +92,119 @@ export default function Home() {
     }
   };
 
-  // Function to format the date
-  const formatDate = (dateString: string | number | Date) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-
-    return `${year}-${month}-${day}, ${hours}:${minutes}`;
+    return date.toLocaleString();
   };
 
   return (
-    <div className='w-full'>
-      <h1 className='text-center text-2xl'>Marktplaats Scraper</h1>
-      <div className='grid grid-cols-6 gap-4 mb-2 p-2'>
+    <div className='w-full p-4'>
+      <h1 className='text-center text-2xl font-bold mb-4'>Marktplaats Scraper</h1>
+      
+      <div className='flex flex-col md:flex-row gap-4 mb-4'>
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter Marktplaats URL"
-          className='col-span-4 border-2 border-gray-400 p-2 rounded-lg'
+          className='flex-1 border-2 border-gray-400 p-2 rounded-lg'
         />
-        <button onClick={handleScrape} className='bg-green-400 rounded-lg p-2'>Check prices</button>
-
-        <button onClick={handleUpdateListings} disabled={isUpdating} className='bg-blue-400 rounded-lg p-2'>
-          {isUpdating ? 'Updating...' : 'Update Listings'}
-        </button>
+        <div className='flex gap-2'>
+          <button 
+            onClick={handleScrape} 
+            className='bg-green-500 hover:bg-green-600 text-white rounded-lg px-4 py-2'
+          >
+            Add Listing
+          </button>
+          <button 
+            onClick={handleUpdateListings} 
+            disabled={isUpdating}
+            className='bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 disabled:opacity-50'
+          >
+            {isUpdating ? 'Updating...' : 'Update All'}
+          </button>
+          <button
+            onClick={() => setShowOffline(!showOffline)}
+            className={`${showOffline ? 'bg-gray-500' : 'bg-gray-300'} text-white rounded-lg px-4 py-2`}
+          >
+            {showOffline ? 'Hide Offline' : 'Show Offline'}
+          </button>
+        </div>
       </div>
 
-      <table className='w-full'>
-        <thead>
-          <tr className='text-left bg-gray-400'>
-            <th></th>
-            <th>Title</th>
-            <th>Publishing Date</th>
-            <th>Current Price</th>
-            <th>Previous Price</th>
-            <th>First Price</th>
-            <th>Last Check</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {listings.map((listing) => (
-            <tr
-              key={listing.id}
-              className={`border-b bg-gray-100 odd:bg-alternate ${
-                listing.currentprice === 'Gereserveerd' ? 'bg-yellow-100 odd:bg-yellow-100' : ''
-              } ${listing.isoffline ? 'bg-red-100 odd:bg-red-100' : ''}`}
-            >
-              <td>
-                <Image
-                  width={75}
-                  height={50}
-                  src={listing.imageurl || 'https://placehold.co/600x400'} // Use the scraped image URL or a placeholder
-                  alt={listing.title}
-                  className='rounded-lg p-1'
-                  unoptimized
-                />
-              </td>
-              <td>
-                <a href={listing.url} target="_blank" rel="noopener noreferrer">
-                  {listing.title}
-                </a>
-              </td>
-              <td>{listing.publishingdate ? new Date(listing.publishingdate).toLocaleString() : 'N/A'}</td>
-              <td>{listing.currentprice}</td>
-              <td>{listing.previousprice}</td>
-              <td>{listing.firstprice}</td>
-              <td>{formatDate(listing.lastcheck)}</td>
-              <td>
-                <button className='text-red-600 hover:underline hover:cursor-pointer' onClick={() => handleDelete(listing.id)}>X</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {listings.length === 0 ? (
+        <div className='text-center py-8 text-gray-500'>No listings found</div>
+      ) : (
+        <div className='overflow-x-auto'>
+          <table className='w-full border-collapse'>
+            <thead>
+              <tr className='bg-gray-200'>
+                <th className='p-2 text-left'>Image</th>
+                <th className='p-2 text-left'>Title</th>
+                <th className='p-2 text-left'>Published</th>
+                <th className='p-2 text-left'>Current</th>
+                <th className='p-2 text-left'>Previous</th>
+                <th className='p-2 text-left'>First</th>
+                <th className='p-2 text-left'>Last Check</th>
+                <th className='p-2 text-left'>Status</th>
+                <th className='p-2 text-left'>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {listings.map((listing) => (
+                <tr
+                  key={listing.id}
+                  className={`border-b ${listing.isoffline ? 'bg-red-50' : listing.currentprice === 'Gereserveerd' ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}
+                >
+                  <td className='p-2'>
+                    <Image
+                      width={75}
+                      height={50}
+                      src={listing.imageurl || 'https://placehold.co/600x400'}
+                      alt={listing.title}
+                      className='rounded-lg object-cover'
+                      unoptimized
+                    />
+                  </td>
+                  <td className='p-2'>
+                    <a 
+                      href={listing.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className='text-blue-600 hover:underline'
+                    >
+                      {listing.title}
+                    </a>
+                  </td>
+                  <td className='p-2'>{listing.publishingdate ? formatDate(listing.publishingdate) : 'N/A'}</td>
+                  <td className='p-2 font-medium'>{listing.currentprice}</td>
+                  <td className='p-2'>{listing.previousprice}</td>
+                  <td className='p-2'>{listing.firstprice}</td>
+                  <td className='p-2'>{formatDate(listing.lastcheck)}</td>
+                  <td className='p-2'>
+                    {listing.isoffline ? (
+                      <span className='text-red-600 font-medium'>Offline</span>
+                    ) : listing.currentprice === 'Gereserveerd' ? (
+                      <span className='text-yellow-600 font-medium'>Reserved</span>
+                    ) : (
+                      <span className='text-green-600 font-medium'>Active</span>
+                    )}
+                  </td>
+                  <td className='p-2'>
+                    <button 
+                      onClick={() => handleDelete(listing.id)}
+                      className='text-red-600 hover:text-red-800 font-bold hover:underline hover:text-2xl hover:cursor-pointer'
+                      title="Delete listing"
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
-
-
