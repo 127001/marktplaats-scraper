@@ -22,23 +22,63 @@ export default function Home() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showOffline, setShowOffline] = useState(false); // Default is now to hide offline ads
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc'); // Default sorting is newest first
+  const [sortColumn, setSortColumn] = useState<'publishingdate' | 'title' | 'currentprice' | 'previousprice' | 'firstprice'>('publishingdate');
 
-  // Function to sort listings by publishingdate
+  // Function to sort listings based on selected column and direction
   const sortListings = (listingsToSort: Listing[]) => {
     return [...listingsToSort].sort((a, b) => {
-      if (!a.publishingdate) return 1;
-      if (!b.publishingdate) return -1;
-      
-      const dateA = new Date(a.publishingdate).getTime();
-      const dateB = new Date(b.publishingdate).getTime();
-      
-      return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+      if (sortColumn === 'publishingdate') {
+        if (!a.publishingdate) return 1;
+        if (!b.publishingdate) return -1;
+        
+        const dateA = new Date(a.publishingdate).getTime();
+        const dateB = new Date(b.publishingdate).getTime();
+        
+        return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+      } 
+      else if (sortColumn === 'title') {
+        // Case-insensitive alphabetical sorting for titles
+        return sortDirection === 'desc' 
+          ? b.title.toLowerCase().localeCompare(a.title.toLowerCase())
+          : a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+      }
+      else {
+        // For price columns
+        const columnA = a[sortColumn];
+        const columnB = b[sortColumn];
+        
+        // Handle special text values like 'Gereserveerd'
+        if (columnA === 'Gereserveerd' && columnB !== 'Gereserveerd') return 1;
+        if (columnA !== 'Gereserveerd' && columnB === 'Gereserveerd') return -1;
+        if (columnA === 'Gereserveerd' && columnB === 'Gereserveerd') return 0;
+        
+        // Extract numeric values from price strings
+        const numA = parseFloat(columnA?.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        const numB = parseFloat(columnB?.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        
+        return sortDirection === 'desc' ? numB - numA : numA - numB;
+      }
     });
   };
 
-  // Toggle sort direction when clicking on the Published header
-  const toggleSortDirection = () => {
-    setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+  // Function to handle column sorting
+  const handleSort = (column: 'publishingdate' | 'title' | 'currentprice' | 'previousprice' | 'firstprice') => {
+    if (sortColumn === column) {
+      // If same column clicked, toggle direction
+      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      // If new column clicked, set it as sort column and default to desc
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
+
+  // Get sort indicator for a given column
+  const getSortIndicator = (column: 'publishingdate' | 'title' | 'currentprice' | 'previousprice' | 'firstprice') => {
+    if (sortColumn === column) {
+      return sortDirection === 'desc' ? '↓' : '↑';
+    }
+    return '';
   };
 
   // Fetch all listings when the component mounts or when showOffline changes
@@ -159,16 +199,36 @@ export default function Home() {
             <thead>
               <tr className='bg-gray-200'>
                 <th className='p-2 text-left'>Image</th>
-                <th className='p-2 text-left'>Title</th>
                 <th 
                   className='p-2 text-left cursor-pointer hover:bg-gray-300'
-                  onClick={toggleSortDirection}
+                  onClick={() => handleSort('title')}
                 >
-                  Published {sortDirection === 'desc' ? '↓' : '↑'}
+                  Title {getSortIndicator('title')}
                 </th>
-                <th className='p-2 text-left'>Current</th>
-                <th className='p-2 text-left'>Previous</th>
-                <th className='p-2 text-left'>First</th>
+                <th 
+                  className='p-2 text-left cursor-pointer hover:bg-gray-300'
+                  onClick={() => handleSort('publishingdate')}
+                >
+                  Published {getSortIndicator('publishingdate')}
+                </th>
+                <th 
+                  className='p-2 text-left cursor-pointer hover:bg-gray-300'
+                  onClick={() => handleSort('currentprice')}
+                >
+                  Current {getSortIndicator('currentprice')}
+                </th>
+                <th 
+                  className='p-2 text-left cursor-pointer hover:bg-gray-300'
+                  onClick={() => handleSort('previousprice')}
+                >
+                  Previous {getSortIndicator('previousprice')}
+                </th>
+                <th 
+                  className='p-2 text-left cursor-pointer hover:bg-gray-300'
+                  onClick={() => handleSort('firstprice')}
+                >
+                  First {getSortIndicator('firstprice')}
+                </th>
                 <th className='p-2 text-left'>Last Check</th>
                 <th className='p-2 text-left'>Status</th>
                 <th className='p-2 text-left'>Action</th>
