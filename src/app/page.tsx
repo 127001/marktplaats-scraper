@@ -21,6 +21,25 @@ export default function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showOffline, setShowOffline] = useState(false); // Default is now to hide offline ads
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc'); // Default sorting is newest first
+
+  // Function to sort listings by publishingdate
+  const sortListings = (listingsToSort: Listing[]) => {
+    return [...listingsToSort].sort((a, b) => {
+      if (!a.publishingdate) return 1;
+      if (!b.publishingdate) return -1;
+      
+      const dateA = new Date(a.publishingdate).getTime();
+      const dateB = new Date(b.publishingdate).getTime();
+      
+      return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+  };
+
+  // Toggle sort direction when clicking on the Published header
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+  };
 
   // Fetch all listings when the component mounts or when showOffline changes
   useEffect(() => {
@@ -141,7 +160,12 @@ export default function Home() {
               <tr className='bg-gray-200'>
                 <th className='p-2 text-left'>Image</th>
                 <th className='p-2 text-left'>Title</th>
-                <th className='p-2 text-left'>Published</th>
+                <th 
+                  className='p-2 text-left cursor-pointer hover:bg-gray-300'
+                  onClick={toggleSortDirection}
+                >
+                  Published {sortDirection === 'desc' ? '↓' : '↑'}
+                </th>
                 <th className='p-2 text-left'>Current</th>
                 <th className='p-2 text-left'>Previous</th>
                 <th className='p-2 text-left'>First</th>
@@ -151,7 +175,7 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {listings
+              {sortListings(listings)
                 .filter(listing => showOffline || !listing.isoffline)
                 .map((listing) => (
                   <tr
