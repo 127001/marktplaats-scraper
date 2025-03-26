@@ -20,7 +20,7 @@ export default function Home() {
   const [url, setUrl] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showOffline, setShowOffline] = useState(false); // New state for filtering
+  const [showOffline, setShowOffline] = useState(false); // Default is now to hide offline ads
 
   // Fetch all listings when the component mounts or when showOffline changes
   useEffect(() => {
@@ -151,56 +151,58 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {listings.map((listing) => (
-                <tr
-                  key={listing.id}
-                  className={`border-b ${listing.isoffline ? 'bg-red-50' : listing.currentprice === 'Gereserveerd' ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}
-                >
-                  <td className='p-2'>
-                    <Image
-                      width={75}
-                      height={50}
-                      src={listing.imageurl || 'https://placehold.co/600x400'}
-                      alt={listing.title}
-                      className='rounded-lg object-cover'
-                      unoptimized
-                    />
-                  </td>
-                  <td className='p-2'>
-                    <a 
-                      href={listing.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className='text-blue-600 hover:underline'
-                    >
-                      {listing.title}
-                    </a>
-                  </td>
-                  <td className='p-2'>{listing.publishingdate ? formatDate(listing.publishingdate) : 'N/A'}</td>
-                  <td className='p-2 font-medium'>{listing.currentprice}</td>
-                  <td className='p-2'>{listing.previousprice}</td>
-                  <td className='p-2'>{listing.firstprice}</td>
-                  <td className='p-2'>{formatDate(listing.lastcheck)}</td>
-                  <td className='p-2'>
-                    {listing.isoffline ? (
-                      <span className='text-red-600 font-medium'>Offline</span>
-                    ) : listing.currentprice === 'Gereserveerd' ? (
-                      <span className='text-yellow-600 font-medium'>Reserved</span>
-                    ) : (
-                      <span className='text-green-600 font-medium'>Active</span>
-                    )}
-                  </td>
-                  <td className='p-2'>
-                    <button 
-                      onClick={() => handleDelete(listing.id)}
-                      className='text-red-600 hover:text-red-800 font-bold hover:underline hover:text-2xl hover:cursor-pointer'
-                      title="Delete listing"
-                    >
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {listings
+                .filter(listing => showOffline || !listing.isoffline)
+                .map((listing) => (
+                  <tr
+                    key={listing.id}
+                    className={`border-b ${listing.isoffline ? 'bg-red-50' : listing.currentprice === 'Gereserveerd' ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}
+                  >
+                    <td className='p-2'>
+                      <Image
+                        width={75}
+                        height={50}
+                        src={listing.imageurl || 'https://placehold.co/600x400'}
+                        alt={listing.title}
+                        className='rounded-lg object-cover'
+                        unoptimized
+                      />
+                    </td>
+                    <td className='p-2'>
+                      <a 
+                        href={listing.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className='text-blue-600 hover:underline'
+                      >
+                        {listing.title}
+                      </a>
+                    </td>
+                    <td className='p-2'>{listing.publishingdate ? formatDate(listing.publishingdate) : 'N/A'}</td>
+                    <td className='p-2 font-medium'>{listing.currentprice}</td>
+                    <td className='p-2'>{listing.previousprice}</td>
+                    <td className='p-2'>{listing.firstprice}</td>
+                    <td className='p-2'>{formatDate(listing.lastcheck)}</td>
+                    <td className='p-2'>
+                      {listing.isoffline ? (
+                        <span className='text-red-600 font-medium'>Offline</span>
+                      ) : listing.currentprice === 'Gereserveerd' ? (
+                        <span className='text-yellow-600 font-medium'>Reserved</span>
+                      ) : (
+                        <span className='text-green-600 font-medium'>Active</span>
+                      )}
+                    </td>
+                    <td className='p-2'>
+                      <button 
+                        onClick={() => handleDelete(listing.id)}
+                        className='text-red-600 hover:text-red-800 font-bold hover:underline hover:text-2xl hover:cursor-pointer'
+                        title="Delete listing"
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
