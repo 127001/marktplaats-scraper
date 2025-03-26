@@ -14,16 +14,16 @@ export const authOptions: NextAuthOptions = {
     // Only allow sign in with your specific Google account
     async signIn({ account, profile }) {
       if (account?.provider === "google") {
-        // You can restrict to a specific email or domain by uncommenting and modifying below:
-        // * To restrict by specific email:
+        // Check if email matches the allowed email from environment variable
         const { email } = profile as { email?: string };
-        return email === "jarno.de.wit@gmail.com";
+        const allowedEmail = process.env.ALLOWED_EMAIL;
         
-        // * To restrict by domain:
-        // const { email } = profile as { email?: string };
-        // return email?.endsWith("@yourdomain.com") || false;
+        if (allowedEmail) {
+          return email === allowedEmail;
+        }
         
-        return true; // Allow all Google sign-ins for now
+        // If no ALLOWED_EMAIL is set, allow all Google sign-ins
+        return true;
       }
       return true;
     },

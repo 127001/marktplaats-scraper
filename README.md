@@ -60,6 +60,7 @@ This is a Next.js application that allows users to scrape and track advertisemen
   # Google OAuth
   GOOGLE_CLIENT_ID=your-google-client-id
   GOOGLE_CLIENT_SECRET=your-google-client-secret
+  ALLOWED_EMAIL=your-email@gmail.com
   
   # NextAuth 
   NEXTAUTH_URL=http://localhost:3000
@@ -156,16 +157,16 @@ This application implements Google SSO authentication with two user types:
 
 By default, anyone with a Google account can authenticate. To restrict access to specific users:
 
+Set the `ALLOWED_EMAIL` environment variable in your `.env` file:
+```
+ALLOWED_EMAIL=your-email@gmail.com
+```
+
+This will restrict authentication to only allow the specified email address. If this variable is not set, the application will allow any Google account to sign in.
+
+Alternatively, you can modify the authentication logic directly:
 1. Open `src/app/api/auth/[...nextauth]/route.ts`
-2. Find the `signIn` callback and modify it to check for specific emails:
-   ```typescript
-   async signIn({ account, profile }) {
-     if (account?.provider === "google") {
-       return profile?.email === "your-email@gmail.com";
-     }
-     return true;
-   },
-   ```
+2. Customize the `signIn` callback to implement your own access rules.
 
 ## Deployment
 
@@ -179,6 +180,7 @@ The app is deployed on [Vercel](https://vercel.com). To deploy your own version:
    - `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret
    - `NEXTAUTH_SECRET`: A random string used to encrypt cookies
    - `NEXTAUTH_URL`: Your production URL (e.g., https://your-app.vercel.app)
+   - `ALLOWED_EMAIL`: Email address allowed to access admin features (optional)
 4. Deploy the app.
 
 ## License
