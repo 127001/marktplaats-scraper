@@ -230,7 +230,7 @@ export default function Home() {
                   First {getSortIndicator('firstprice')}
                 </th>
                 <th className='p-2 text-left'>Last Check</th>
-                <th className='p-2 text-left'>Status</th>
+                {showOffline && <th className='p-2 text-left'>Status</th>}
                 <th className='p-2 text-left'>Action</th>
               </tr>
             </thead>
@@ -267,15 +267,17 @@ export default function Home() {
                     <td className='p-2'>{listing.previousprice}</td>
                     <td className='p-2'>{listing.firstprice}</td>
                     <td className='p-2'>{formatDate(listing.lastcheck)}</td>
-                    <td className='p-2'>
-                      {listing.isoffline ? (
-                        <span className='text-red-600 font-medium'>Offline</span>
-                      ) : listing.currentprice === 'Gereserveerd' ? (
-                        <span className='text-yellow-600 font-medium'>Reserved</span>
-                      ) : (
-                        <span className='text-green-600 font-medium'>Active</span>
-                      )}
-                    </td>
+                    {showOffline && (
+                      <td className='p-2'>
+                        {listing.isoffline ? (
+                          <span className='text-red-600 font-medium'>Offline</span>
+                        ) : listing.currentprice === 'Gereserveerd' ? (
+                          <span className='text-yellow-600 font-medium'>Reserved</span>
+                        ) : (
+                          <span className='text-green-600 font-medium'>Active</span>
+                        )}
+                      </td>
+                    )}
                     <td className='p-2'>
                       <button 
                         onClick={() => handleDelete(listing.id)}
