@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useAuth } from '@/lib/auth';
 
 interface Listing {
   id: string;
@@ -17,6 +18,7 @@ interface Listing {
 }
 
 export default function Home() {
+  const { isAuthenticated, signIn, signOut } = useAuth();
   const [url, setUrl] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -158,30 +160,60 @@ export default function Home() {
 
   return (
     <div className='w-full p-4'>
-      <h1 className='text-center text-2xl font-bold mb-4'>Marktplaats Scraper</h1>
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold'>Marktplaats Scraper</h1>
+        {isAuthenticated ? (
+          <button 
+            onClick={signOut}
+            className='bg-gray-600 hover:bg-gray-700 text-white rounded-lg px-4 py-2'
+          >
+            Sign Out
+          </button>
+        ) : (
+          <button 
+            onClick={signIn}
+            className='bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2'
+          >
+            Sign In
+          </button>
+        )}
+      </div>
       
-      <div className='flex flex-col md:flex-row gap-4 mb-4'>
-        <input
-          type="text"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Enter Marktplaats URL"
-          className='flex-1 border-2 border-gray-400 p-2 rounded-lg'
-        />
-        <div className='flex gap-2'>
-          <button 
-            onClick={handleScrape} 
-            className='bg-green-500 hover:bg-green-600 text-white rounded-lg px-4 py-2'
-          >
-            Add Listing
-          </button>
-          <button 
-            onClick={handleUpdateListings} 
-            disabled={isUpdating}
-            className='bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 disabled:opacity-50'
-          >
-            {isUpdating ? 'Updating...' : 'Update All'}
-          </button>
+      {isAuthenticated && (
+        <div className='flex flex-col md:flex-row gap-4 mb-4'>
+          <input
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Enter Marktplaats URL"
+            className='flex-1 border-2 border-gray-400 p-2 rounded-lg'
+          />
+          <div className='flex gap-2'>
+            <button 
+              onClick={handleScrape} 
+              className='bg-green-500 hover:bg-green-600 text-white rounded-lg px-4 py-2'
+            >
+              Add Listing
+            </button>
+            <button 
+              onClick={handleUpdateListings} 
+              disabled={isUpdating}
+              className='bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 disabled:opacity-50'
+            >
+              {isUpdating ? 'Updating...' : 'Update All'}
+            </button>
+            <button
+              onClick={() => setShowOffline(!showOffline)}
+              className={`${showOffline ? 'bg-gray-500' : 'bg-gray-300'} text-white rounded-lg px-4 py-2`}
+            >
+              {showOffline ? 'Hide Offline' : 'Show Offline'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isAuthenticated && (
+        <div className='mb-4'>
           <button
             onClick={() => setShowOffline(!showOffline)}
             className={`${showOffline ? 'bg-gray-500' : 'bg-gray-300'} text-white rounded-lg px-4 py-2`}
@@ -189,7 +221,7 @@ export default function Home() {
             {showOffline ? 'Hide Offline' : 'Show Offline'}
           </button>
         </div>
-      </div>
+      )}
 
       {listings.length === 0 ? (
         <div className='text-center py-8 text-gray-500'>No listings found</div>
@@ -231,7 +263,7 @@ export default function Home() {
                 </th>
                 <th className='p-2 text-left'>Last Check</th>
                 {showOffline && <th className='p-2 text-left'>Status</th>}
-                <th className='p-2 text-left'>Action</th>
+                {isAuthenticated && <th className='p-2 text-left'>Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -278,15 +310,17 @@ export default function Home() {
                         )}
                       </td>
                     )}
-                    <td className='p-2'>
-                      <button 
-                        onClick={() => handleDelete(listing.id)}
-                        className='text-red-600 hover:text-red-800 font-bold hover:underline hover:text-2xl hover:cursor-pointer'
-                        title="Delete listing"
-                      >
-                        ×
-                      </button>
-                    </td>
+                    {isAuthenticated && (
+                      <td className='p-2'>
+                        <button 
+                          onClick={() => handleDelete(listing.id)}
+                          className='text-red-600 hover:text-red-800 font-bold hover:underline hover:text-2xl hover:cursor-pointer'
+                          title="Delete listing"
+                        >
+                          ×
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
             </tbody>

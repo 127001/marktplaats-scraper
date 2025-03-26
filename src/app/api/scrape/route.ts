@@ -1,18 +1,25 @@
 import { NextResponse } from 'next/server';
 import { pool, scrapeData, Listing } from '@/lib/utils';
+import { checkAuth } from '../middleware';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
+  const activeOnly = searchParams.get('active') === 'true';
 
   try {
-    const client = await pool.connect();
-
+    // Only require authentication when adding a new listing (url parameter is present)
     if (url) {
+      // Check if user is authenticated before allowing to add a new listing
+      const authError = await checkAuth();
+      if (authError) return authError;
+      
       const listing = await scrapeData(url);
       // debug scraped data
       console.log('Scraped data:', listing);
 
+      const client = await pool.connect();
+      
       // Check if the URL already exists in the database
       const existingListing = await client.query<Listing>(
         'SELECT * FROM listings WHERE url = $1',
@@ -66,10 +73,17 @@ export async function GET(request: Request) {
           ]
         );
       }
+      client.release();
     }
 
-    // Fetch all listings to return
-    const listings = await client.query<Listing>('SELECT * FROM listings');
+    // Fetching listings is allowed for everyone (public access)
+    const client = await pool.connect();
+    let query = 'SELECT * FROM listings';
+    if (activeOnly) {
+      query += ' WHERE isOffline = false';
+    }
+    
+    const listings = await client.query<Listing>(query);
     client.release();
 
     return NextResponse.json({ listings: listings.rows });

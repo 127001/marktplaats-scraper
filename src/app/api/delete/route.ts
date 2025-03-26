@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { checkAuth } from '../middleware';
 
 // Create a connection pool
 const pool = new Pool({
@@ -10,6 +11,10 @@ const pool = new Pool({
 });
 
 export async function DELETE(request: Request) {
+  // Check if user is authenticated
+  const authError = await checkAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 

@@ -10,6 +10,10 @@ This is a Next.js application that allows users to scrape and track advertisemen
 - **Highlight Reserved Ads**: Ads marked as "Gereserveerd" are highlighted in the table.
 - **Offline Detection**: Ads that go offline are marked and no longer updated.
 - **Publishing Date**: Track the publishing date of each ad.
+- **Track Price Changes**: Monitor price changes for each ad.
+- **Sort Listings**: Sort ads by title, published date, or price.
+- **Filter Listings**: Show or hide offline ads.
+- **Google Authentication**: Restrict admin actions to specific users.
 
 ## Technologies Used
 
@@ -26,11 +30,7 @@ This is a Next.js application that allows users to scrape and track advertisemen
 
 1. **Node.js**: Ensure you have Node.js installed. Download it from [here](https://nodejs.org/).
 2. **PostgreSQL Database**: Set up a PostgreSQL database (e.g., using [Neon](https://neon.tech/)).
-3. **Environment Variables**: Create a `.env` file in the root directory with the following variables:
-
-   ```env
-   DATABASE_URL="your-postgres-connection-string"
-    ```
+3. **Google Cloud Account**: Create a Google Cloud account (if not already created).
 
 ### Installation
 
@@ -45,11 +45,50 @@ This is a Next.js application that allows users to scrape and track advertisemen
   ```bash
   npm install
   ```
-3. **Run the development server**:
+3. **Set up environment variables**:
 
+  Copy the example environment file and update it with your values:
   ```bash
-  npm run dev
+  cp env.example .env
   ```
+  
+  Then edit the `.env` file with your actual values:
+  ```env
+  # Database connection
+  DATABASE_URL="your-postgres-connection-string"
+  
+  # Google OAuth
+  GOOGLE_CLIENT_ID=your-google-client-id
+  GOOGLE_CLIENT_SECRET=your-google-client-secret
+  
+  # NextAuth 
+  NEXTAUTH_URL=http://localhost:3000
+  NEXTAUTH_SECRET=your-nextauth-secret-key
+  ```
+
+  You can generate a secure NEXTAUTH_SECRET by running: `openssl rand -base64 32`
+
+### Google Authentication Setup
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Navigate to **APIs & Services > Credentials**
+4. Click **Create Credentials** and select **OAuth Client ID**
+5. Select **Web Application** as the application type
+6. Set the following:
+   - Name: `Marktplaats Scraper` (or any name you prefer)
+   - Authorized JavaScript origins: `http://localhost:3000` (and your production URL if applicable)
+   - Authorized redirect URIs: `http://localhost:3000/api/auth/callback/google` (and your production redirect URL)
+7. Click **Create** to generate your Client ID and Client Secret
+8. Copy these values to your `.env` file
+
+## Running the Application
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000` in your browser.
 
 ### Database Schema
 
@@ -105,11 +144,43 @@ The table displays the following details for each ad:
 - Publishing Date: The date the ad was published.
 - Action: Delete the listing.
 
+## Authentication Features
+
+This application implements Google SSO authentication with two user types:
+
+1. **Public users**: Can view listings and filter/sort them
+2. **Authenticated users**: Can perform admin actions such as:
+   - Adding new listings
+   - Updating existing listings
+   - Deleting listings
+
+By default, anyone with a Google account can authenticate. To restrict access to specific users:
+
+1. Open `src/app/api/auth/[...nextauth]/route.ts`
+2. Find the `signIn` callback and modify it to check for specific emails:
+   ```typescript
+   async signIn({ account, profile }) {
+     if (account?.provider === "google") {
+       return profile?.email === "your-email@gmail.com";
+     }
+     return true;
+   },
+   ```
+
 ## Deployment
 
 The app is deployed on [Vercel](https://vercel.com). To deploy your own version:
 
 1. Push your code to a GitHub repository.
 2. Connect the repository to Vercel.
-3. Add the ```DATABASE_URL``` environment variable in the Vercel dashboard.
+3. Add the required environment variables in the Vercel dashboard:
+   - `DATABASE_URL`: Your PostgreSQL connection string
+   - `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID
+   - `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret
+   - `NEXTAUTH_SECRET`: A random string used to encrypt cookies
+   - `NEXTAUTH_URL`: Your production URL (e.g., https://your-app.vercel.app)
 4. Deploy the app.
+
+## License
+
+This project is licensed under the MIT License.

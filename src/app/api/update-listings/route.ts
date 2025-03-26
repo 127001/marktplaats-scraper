@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { pool, scrapeData } from '@/lib/utils';
+import { checkAuth } from '../middleware';
 
 export async function GET() {
+  // Check if user is authenticated
+  const authError = await checkAuth();
+  if (authError) return authError;
+
   try {
     const client = await pool.connect();
 
