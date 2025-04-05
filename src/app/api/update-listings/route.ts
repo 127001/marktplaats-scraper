@@ -4,9 +4,13 @@ import { pool, scrapeData } from '@/lib/utils';
 export async function GET() {
   try {
     const client = await pool.connect();
+    let updatedCount = 0;
+    let offlineCount = 0;
+    let errorCount = 0;
 
-    // Fetch all listings from the database
-    const listings = await client.query('SELECT * FROM listings WHERE isOffline = false'); // Only check active listings
+    // Fetch only active listings from the database
+    const listings = await client.query('SELECT * FROM listings WHERE isOffline = false');
+    console.log(`Processing ${listings.rows.length} active listings`);
 
     for (const listing of listings.rows) {
       try {
@@ -18,6 +22,7 @@ export async function GET() {
             `UPDATE listings SET isOffline = $1, lastCheck = $2 WHERE id = $3`,
             [true, scrapedData.lastCheck, listing.id]
           );
+          offlineCount++;
           continue; // Skip further checks for offline ads
         }
 
@@ -48,6 +53,7 @@ export async function GET() {
               listing.id,
             ]
           );
+          updatedCount++;
         } else {
           // If the price hasn't changed, only update the lastCheck timestamp
           await client.query(
@@ -62,16 +68,28 @@ export async function GET() {
           `UPDATE listings SET lastCheck = NOW(), isOffline = true WHERE id = $1`,
           [listing.id]
         );
+        errorCount++;
       }
     }
 
-    // Fetch all listings to return
-    const updatedListings = await client.query('SELECT * FROM listings');
+    // Fetch all active listings after the update
+    const updatedListings = await client.query('SELECT * FROM listings WHERE isOffline = false');
     client.release();
 
-    return NextResponse.json({ listings: updatedListings.rows });
+    console.log(`Update complete: ${updatedCount} listings updated, ${offlineCount} went offline, ${errorCount} errors`);
+
+    return NextResponse.json({ 
+      listings: updatedListings.rows,
+      stats: {
+        totalProcessed: listings.rows.length,
+        updated: updatedCount,
+        wentOffline: offlineCount,
+        errors: errorCount
+      }
+    });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
 }
+
