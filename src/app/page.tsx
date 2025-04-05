@@ -104,8 +104,11 @@ export default function Home() {
       return;
     }
 
+    // check if url contains ? and if so only use the part before the ?
+    const urlWithoutParams = url.split('?')[0];
+
     try {
-      const response = await fetch(`/api/scrape?url=${encodeURIComponent(url)}`);
+      const response = await fetch(`/api/scrape?url=${encodeURIComponent(urlWithoutParams)}`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       setListings(data.listings);
