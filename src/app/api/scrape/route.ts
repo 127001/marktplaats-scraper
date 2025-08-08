@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { pool, scrapeData, Listing } from '@/lib/utils';
+import { scrapeData, Listing } from '@/lib/utils';
+import { pool } from '@/lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
+  const active = searchParams.get('active');
 
   try {
     const client = await pool.connect();
@@ -68,11 +70,19 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fetch all listings to return
-    const listings = await client.query<Listing>('SELECT * FROM listings');
+    // Fetch listings to return
+    const query = active === 'true' ? 'SELECT * FROM listings WHERE isOffline = false' : 'SELECT * FROM listings';
+    const listings = await client.query<Listing>(query);
     client.release();
 
-    return NextResponse.json({ listings: listings.rows });
+    return NextResponse.json(
+      { listings: listings.rows },
+      {
+        headers: active === 'true'
+          ? { 'Cache-Control': 's-maxage=30, stale-while-revalidate=300' }
+          : undefined,
+      }
+    );
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });

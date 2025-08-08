@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { pool, scrapeData } from '@/lib/utils';
+import { scrapeData } from '@/lib/utils';
+import { pool } from '@/lib/db';
 
 export async function GET() {
   try {

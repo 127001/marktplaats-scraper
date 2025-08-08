@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
-
-// Create a connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+import { pool } from '@/lib/db';
 
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);

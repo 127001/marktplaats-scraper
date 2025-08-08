@@ -1,14 +1,6 @@
+import 'server-only';
 import axios from 'axios';
 import { load } from 'cheerio';
-import { Pool } from 'pg';
-
-// Create a connection pool
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
 
 // Define the structure of a listing
 export interface Listing {
