@@ -26,40 +26,48 @@ export async function GET() {
           continue; // Skip further checks for offline ads
         }
 
-        // Compare the scraped price with the current price in the database
-        if (scrapedData.currentPrice !== listing.currentprice) {
-          // If the price has changed, update the price fields and lastCheck
-          await client.query(
-            `
-            UPDATE listings
-            SET 
-              title = $1, 
-              currentPrice = $2, 
-              previousPrice = $3, 
-              lastCheck = $4, 
-              imageurl = $5,
-              publishingDate = $6,
-              isOffline = $7
-            WHERE id = $8
-          `,
-            [
-              scrapedData.title,
-              scrapedData.currentPrice,
-              listing.currentprice, // Move current price to previous price
-              scrapedData.lastCheck,
-              scrapedData.imageurl,
-              scrapedData.publishingDate,
-              false, // Explicitly set to false for active ads
-              listing.id,
-            ]
-          );
+        // Check if price has changed to determine if we need to move current price to previous price
+        const priceChanged = scrapedData.currentPrice !== listing.currentprice;
+        const previousPrice = priceChanged ? listing.currentprice : listing.previousprice;
+
+        // Ensure firstPrice is always set - use existing firstPrice if it exists, otherwise use current price
+        const existingFirstPrice = listing.firstprice as string | null | undefined;
+        const firstPrice = existingFirstPrice && existingFirstPrice.trim() !== '' 
+          ? existingFirstPrice 
+          : scrapedData.currentPrice;
+
+        // Always update all fields for active listings to ensure missing data is populated
+        // This ensures title, imageurl, publishingDate, etc. are updated even if price hasn't changed
+        await client.query(
+          `
+          UPDATE listings
+          SET 
+            title = $1, 
+            currentPrice = $2, 
+            previousPrice = $3, 
+            firstPrice = $4,
+            lastCheck = $5, 
+            imageurl = $6,
+            publishingDate = $7,
+            isOffline = $8
+          WHERE id = $9
+        `,
+          [
+            scrapedData.title,
+            scrapedData.currentPrice,
+            previousPrice, // Only update previousPrice if price changed, otherwise keep existing value
+            firstPrice, // Use existing firstPrice if available, otherwise set to current price
+            scrapedData.lastCheck,
+            scrapedData.imageurl,
+            scrapedData.publishingDate,
+            false, // Explicitly set to false for active ads
+            listing.id,
+          ]
+        );
+        
+        // Only count as "updated" if price changed, but all fields are still updated
+        if (priceChanged) {
           updatedCount++;
-        } else {
-          // If the price hasn't changed, only update the lastCheck timestamp
-          await client.query(
-            `UPDATE listings SET lastCheck = $1, isOffline = $2 WHERE id = $3`,
-            [scrapedData.lastCheck, false, listing.id] // Explicitly set to false for active ads
-          );
         }
       } catch (error) {
         console.error(`Error updating listing ${listing.id}:`, error);

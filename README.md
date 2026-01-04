@@ -43,12 +43,12 @@ This is a Next.js application that allows users to scrape and track advertisemen
 2. ** Install dependencies**:
 
   ```bash
-  npm install
+  pnpm install
   ```
 3. **Run the development server**:
 
   ```bash
-  npm run dev
+  pnpm run dev
   ```
 
 ### Database Schema

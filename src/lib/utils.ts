@@ -61,14 +61,21 @@ export const scrapeData = async (url: string): Promise<Listing> => {
   const $ = load(data);
 
   // Extract the title and price
-  const title = $('h1.Listing-title').text().trim();
-  const price = $('div.Listing-price').text().trim();
+  const title = $('h1.ListingHeader-title').text().trim();
+  const price = $('div.ListingHeader-price').text().trim();
 
-  // Extract the first image URL from div.carousel
-  const imageUrl = $('img.HeroImage-image').first().attr('src') || '';
+  // Extract the first image URL
+  let imageUrl = $('img.HeroImage-image').first().attr('src') || '';
+  // Handle protocol-relative URLs (starting with //)
+  if (imageUrl.startsWith('//')) {
+    imageUrl = 'https:' + imageUrl;
+  }
 
-  // Extract the publishing date from span.Stats-summary
-  const publishingDateString = $('span.Stats-summary').eq(2).text().trim();
+  // Extract the publishing date from div.Report-stat or div.Report-label
+  let publishingDateString = $('div.Report-stat:contains("Sinds") b').text().trim();
+  if (!publishingDateString) {
+    publishingDateString = $('div.Report-label:contains("Sinds") b').text().trim();
+  }
   console.log('publishingDateString: ', publishingDateString);
   const publishingDate = parsePublishingDate(publishingDateString);
   console.log('publishingDate: ', publishingDate);

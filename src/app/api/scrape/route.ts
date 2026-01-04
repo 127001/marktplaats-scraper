@@ -20,8 +20,21 @@ export async function GET(request: Request) {
       );
 
       if (existingListing.rows.length > 0) {
-        // Update the existing record only if the price has changed and the ad is not offline
-        if (listing.currentPrice !== existingListing.rows[0].currentPrice && !existingListing.rows[0].isOffline) {
+        // Update the existing record if the ad is not offline
+        // Always update all fields to ensure missing data is populated
+        // PostgreSQL returns lowercase column names, so we access them with bracket notation
+        const existing = existingListing.rows[0] as unknown as Record<string, unknown>;
+        if (!(existing.isoffline as boolean)) {
+          // Check if price has changed to determine if we need to move current price to previous price
+          const priceChanged = listing.currentPrice !== (existing.currentprice as string);
+          const previousPrice = priceChanged ? (existing.currentprice as string) : (existing.previousprice as string | null);
+          
+          // Ensure firstPrice is always set - use existing firstPrice if it exists, otherwise use current price
+          const existingFirstPrice = existing.firstprice as string | null | undefined;
+          const firstPrice = existingFirstPrice && existingFirstPrice.trim() !== '' 
+            ? existingFirstPrice 
+            : listing.currentPrice;
+          
           await client.query(
             `
             UPDATE listings
@@ -29,16 +42,18 @@ export async function GET(request: Request) {
               title = $1, 
               currentPrice = $2, 
               previousPrice = $3, 
-              lastCheck = $4, 
-              imageurl = $5,
-              publishingDate = $6,
-              isOffline = $7
-            WHERE url = $8
+              firstPrice = $4,
+              lastCheck = $5, 
+              imageurl = $6,
+              publishingDate = $7,
+              isOffline = $8
+            WHERE url = $9
           `,
             [
               listing.title,
               listing.currentPrice,
-              existingListing.rows[0].currentPrice, // Move current price to previous price
+              previousPrice, // Only update previousPrice if price changed, otherwise keep existing value
+              firstPrice, // Use existing firstPrice if available, otherwise set to current price
               listing.lastCheck,
               listing.imageurl,
               listing.publishingDate,
