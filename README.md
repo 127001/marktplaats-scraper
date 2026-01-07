@@ -4,6 +4,7 @@ This is a Next.js application that allows users to scrape and track advertisemen
 
 ## Features
 
+- **Google Authentication**: Secure access with Google OAuth and email allowlist
 - **Scrape Ads**: Enter a Marktplaats URL to scrape and store ad details.
 - **Update Listings**: Automatically update all listings twice a day using a cron job.
 - **Delete Listings**: Remove unwanted listings from the database.
@@ -30,7 +31,12 @@ This is a Next.js application that allows users to scrape and track advertisemen
 
    ```env
    DATABASE_URL="your-postgres-connection-string"
-    ```
+   NEXTAUTH_SECRET="your-secret-here"
+   AUTH_TRUST_HOST=true
+   GOOGLE_CLIENT_ID="your-google-client-id"
+   GOOGLE_CLIENT_SECRET="your-google-client-secret"
+   AUTHORIZED_EMAILS="user@example.com,user2@example.com"
+   ```
 
 ### Installation
 
@@ -40,12 +46,21 @@ This is a Next.js application that allows users to scrape and track advertisemen
   git clone https://github.com/your-username/marktplaats-scraper.git
   cd marktplaats-scraper
   ```
-2. ** Install dependencies**:
+2. **Install dependencies**:
 
   ```bash
   pnpm install
   ```
-3. **Run the development server**:
+3. **Set up the database schema**: The app uses JWT sessions (no database tables required for authentication). However, if you want to store user data in the database, you can optionally run:
+
+   ```bash
+   # Connect to your PostgreSQL database and run:
+   psql $DATABASE_URL -f docs/database-schema.sql
+   ```
+
+   Note: This is optional as the app currently uses JWT sessions stored in cookies. See [docs/database-schema.sql](docs/database-schema.sql) for the schema.
+
+4. **Run the development server**:
 
   ```bash
   pnpm run dev
@@ -55,6 +70,7 @@ This is a Next.js application that allows users to scrape and track advertisemen
 
 The app uses the following database schema:
 
+**Listings table:**
 ```sql
 CREATE TABLE listings (
   id SERIAL PRIMARY KEY,
@@ -69,6 +85,8 @@ CREATE TABLE listings (
   isOffline BOOLEAN DEFAULT FALSE
 );
 ```
+
+**Note**: The app uses JWT sessions (stored in cookies) for compatibility with Edge runtime middleware. The database schema file includes tables for database sessions, but they are not required for the current JWT-based implementation.
 
 ### Cron Job
 
@@ -105,11 +123,75 @@ The table displays the following details for each ad:
 - Publishing Date: The date the ad was published.
 - Action: Delete the listing.
 
+## Authentication
+
+The app uses Google OAuth for authentication. Only email addresses listed in the `AUTHORIZED_EMAILS` environment variable can access the application.
+
+### Setting up Google OAuth
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the Google+ API
+4. Create OAuth 2.0 credentials (Web application)
+5. Add authorized redirect URIs:
+   - For development: `http://localhost:3000/api/auth/callback/google`
+   - For production: `https://your-domain.com/api/auth/callback/google`
+6. Copy the Client ID and Client Secret to your `.env` file
+
+### Adding Authorized Users
+
+Add email addresses to the `AUTHORIZED_EMAILS` environment variable (comma-separated):
+
+```env
+AUTHORIZED_EMAILS="user1@example.com,user2@example.com"
+```
+
 ## Deployment
 
 The app is deployed on [Vercel](https://vercel.com). To deploy your own version:
 
-1. Push your code to a GitHub repository.
-2. Connect the repository to Vercel.
-3. Add the ```DATABASE_URL``` environment variable in the Vercel dashboard.
-4. Deploy the app.
+### Prerequisites
+
+1. **GitHub Repository**: Push your code to a GitHub repository
+2. **Vercel Account**: Sign up at [vercel.com](https://vercel.com) if you haven't already
+
+### Step-by-Step Deployment
+
+1. **Connect Repository to Vercel**:
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Click "Add New Project"
+   - Import your GitHub repository
+   - Vercel will auto-detect Next.js
+
+2. **Configure Environment Variables**:
+   In Vercel Project Settings → Environment Variables, add:
+   - `DATABASE_URL` - Your PostgreSQL connection string
+   - `NEXTAUTH_SECRET` - Same secret as local (or generate new: `openssl rand -base64 32`)
+   - `AUTH_TRUST_HOST` - Set to `true` (required for Vercel)
+   - `GOOGLE_CLIENT_ID` - Your Google OAuth Client ID
+   - `GOOGLE_CLIENT_SECRET` - Your Google OAuth Client Secret
+   - `AUTHORIZED_EMAILS` - Comma-separated emails (e.g., `user1@example.com,user2@example.com`)
+
+3. **Update Google OAuth Settings**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Navigate to your OAuth 2.0 credentials
+   - Add authorized redirect URI: `https://your-domain.vercel.app/api/auth/callback/google`
+   - If using a custom domain, also add: `https://your-custom-domain.com/api/auth/callback/google`
+
+4. **Deploy**:
+   - Click "Deploy" in Vercel
+   - Wait for the build to complete
+   - Your app will be live at `https://your-project.vercel.app`
+
+### Post-Deployment
+
+- **Test Authentication**: Visit your site and test Google sign-in
+- **Verify Cron Job**: Check Vercel logs to ensure the daily update job runs (configured in `vercel.json`)
+- **Monitor**: Check Vercel dashboard for any errors or issues
+
+### Custom Domain (Optional)
+
+1. In Vercel Project Settings → Domains
+2. Add your custom domain
+3. Update Google OAuth redirect URI to include your custom domain
+4. Update DNS records as instructed by Vercel

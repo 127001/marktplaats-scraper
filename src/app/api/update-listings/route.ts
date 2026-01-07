@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { pool, scrapeData } from '@/lib/utils';
+import { requireAuthOrCron } from '@/lib/auth';
 
 export async function GET() {
+  const authResult = await requireAuthOrCron();
+  if (authResult.error) {
+    return authResult.error;
+  }
+
   try {
     const client = await pool.connect();
     let updatedCount = 0;
