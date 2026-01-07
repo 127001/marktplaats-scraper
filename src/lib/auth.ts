@@ -1,30 +1,10 @@
 import { auth } from '@/server/auth/config';
 import { NextResponse } from 'next/server';
+import { isAuthorizedEmail } from '@/lib/authorization';
+import { headers } from 'next/headers';
 
-/**
- * Gets the authorized emails from environment variable
- * @returns Array of authorized email addresses
- */
-export const getAuthorizedEmails = (): string[] => {
-  const emails = process.env.AUTHORIZED_EMAILS;
-  if (!emails) {
-    return [];
-  }
-  return emails.split(',').map(email => email.trim().toLowerCase());
-};
-
-/**
- * Checks if an email is in the authorized list
- * @param email - Email address to check
- * @returns True if email is authorized, false otherwise
- */
-export const isAuthorizedEmail = (email: string | null | undefined): boolean => {
-  if (!email) {
-    return false;
-  }
-  const authorizedEmails = getAuthorizedEmails();
-  return authorizedEmails.includes(email.toLowerCase());
-};
+// Re-export for backward compatibility
+export { isAuthorizedEmail, getAuthorizedEmails } from '@/lib/authorization';
 
 /**
  * Gets the current server session
@@ -32,6 +12,31 @@ export const isAuthorizedEmail = (email: string | null | undefined): boolean => 
  */
 export const getServerSession = async () => {
   return await auth();
+};
+
+/**
+ * Verifies Vercel cron job authentication
+ * Checks for x-vercel-cron header or CRON_SECRET header
+ * @returns True if authenticated as a cron job, false otherwise
+ */
+export const verifyCronAuth = async (): Promise<boolean> => {
+  const headersList = await headers();
+  
+  // Check for Vercel's automatic cron header
+  const vercelCron = headersList.get('x-vercel-cron');
+  if (vercelCron === '1') {
+    return true;
+  }
+  
+  // Check for custom CRON_SECRET header (optional, for additional security)
+  const cronSecret = headersList.get('authorization');
+  const expectedSecret = process.env.CRON_SECRET;
+  
+  if (expectedSecret && cronSecret === `Bearer ${expectedSecret}`) {
+    return true;
+  }
+  
+  return false;
 };
 
 /**
@@ -65,6 +70,30 @@ export const requireAuth = async () => {
   return {
     error: null,
     session
+  };
+};
+
+/**
+ * Requires either user authentication or cron authentication
+ * Useful for endpoints that can be called by both users and cron jobs
+ * @returns Object with error (if any) and session (if user auth)
+ */
+export const requireAuthOrCron = async () => {
+  // First check if it's a cron job
+  const isCron = await verifyCronAuth();
+  if (isCron) {
+    return {
+      error: null,
+      session: null,
+      isCron: true
+    };
+  }
+  
+  // Otherwise, require user authentication
+  const authResult = await requireAuth();
+  return {
+    ...authResult,
+    isCron: false
   };
 };
 

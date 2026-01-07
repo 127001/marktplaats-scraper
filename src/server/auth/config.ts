@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
-import { isAuthorizedEmail } from '@/lib/auth';
+import { isAuthorizedEmail } from '@/lib/authorization';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [

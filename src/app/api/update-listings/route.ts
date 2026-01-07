@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { pool, scrapeData } from '@/lib/utils';
-import { requireAuth } from '@/lib/auth';
+import { requireAuthOrCron } from '@/lib/auth';
 
 export async function GET() {
-  const authResult = await requireAuth();
+  const authResult = await requireAuthOrCron();
   if (authResult.error) {
     return authResult.error;
   }
