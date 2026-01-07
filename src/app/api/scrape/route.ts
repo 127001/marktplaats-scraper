@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { pool, scrapeData, Listing } from '@/lib/utils';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth();
+  if (authResult.error) {
+    return authResult.error;
+  }
+
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
 

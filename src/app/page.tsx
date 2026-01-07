@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useSession, signOut } from 'next-auth/react';
 
 interface Listing {
   id: string;
@@ -80,6 +81,7 @@ const StatsPanel = ({ stats, onClose }: { stats: UpdateStats; onClose: () => voi
 };
 
 export default function Home() {
+  const { data: session } = useSession();
   const [url, setUrl] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -89,6 +91,10 @@ export default function Home() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [updateStats, setUpdateStats] = useState<UpdateStats | null>(null);
   const [showStats, setShowStats] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' });
+  };
 
   // Function to sort listings based on selected column and direction
   const sortListings = (listingsToSort: Listing[]) => {
@@ -245,7 +251,33 @@ export default function Home() {
 
   return (
     <div className='w-full p-4'>
-      <h1 className='text-center text-2xl font-bold mb-4'>Marktplaats Scraper</h1>
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold'>Marktplaats Scraper</h1>
+        <div className='flex items-center gap-4'>
+          {session?.user && (
+            <div className='flex items-center gap-2'>
+              {session.user.image && (
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name || 'User'}
+                  width={32}
+                  height={32}
+                  className='rounded-full'
+                />
+              )}
+              <span className='text-sm text-gray-600'>
+                {session.user.name || session.user.email}
+              </span>
+            </div>
+          )}
+          <button
+            onClick={handleSignOut}
+            className='bg-gray-500 hover:bg-gray-600 text-white rounded-lg px-4 py-2 text-sm'
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
       
       {/* Notification */}
       {notification && (

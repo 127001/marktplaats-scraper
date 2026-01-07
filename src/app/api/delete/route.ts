@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { requireAuth } from '@/lib/auth';
 
 // Create a connection pool
 const pool = new Pool({
@@ -10,6 +11,11 @@ const pool = new Pool({
 });
 
 export async function DELETE(request: Request) {
+  const authResult = await requireAuth();
+  if (authResult.error) {
+    return authResult.error;
+  }
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 
