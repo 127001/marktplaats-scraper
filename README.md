@@ -35,7 +35,7 @@ This is a Next.js application that allows users to scrape and track advertisemen
    AUTH_TRUST_HOST=true
    GOOGLE_CLIENT_ID="your-google-client-id"
    GOOGLE_CLIENT_SECRET="your-google-client-secret"
-   AUTHORIZED_EMAILS="jarno.de.wit@gmail.com"
+   AUTHORIZED_EMAILS="user@example.com,user2@example.com"
    ```
 
 ### Installation
