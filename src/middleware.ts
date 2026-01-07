@@ -47,9 +47,14 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch (error) {
-    // If auth fails, log and allow request (NextAuth will handle authentication)
+    // If auth fails, log and redirect to sign in for security
+    // Never allow requests through when authentication fails
     console.error('Middleware auth error:', error);
-    return NextResponse.next();
+    const signInUrl = new URL('/signin', request.url);
+    if (pathname !== '/') {
+      signInUrl.searchParams.set('callbackUrl', pathname);
+    }
+    return NextResponse.redirect(signInUrl);
   }
 }
 
