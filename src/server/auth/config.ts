@@ -21,7 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user }) {
       if (!user.email) {
         return false;
       }
@@ -52,7 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Default: redirect to home (baseUrl)
       return baseUrl;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         // Store user data in token on first sign-in
         // Use email as ID if user.id doesn't exist (common with OAuth providers)
