@@ -22,12 +22,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async signIn({ user }) {
+      // If no email, block sign-in (shouldn't happen with Google OAuth but safe check)
       if (!user.email) {
+        console.log(`Sign-in attempt without email`);
         return false;
       }
 
-      // Check if email is in the authorized list
-      if (!isAuthorizedEmail(user.email)) {
+      // Check AUTHORIZED_EMAILS whitelist if configured
+      if (process.env.AUTHORIZED_EMAILS && !isAuthorizedEmail(user.email)) {
         console.log(`Unauthorized login attempt: ${user.email}`);
         return false;
       }

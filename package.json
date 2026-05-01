@@ -12,8 +12,8 @@
   "dependencies": {
     "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.15.0",
-    "cheerio": "^1.0.0",
-    "next": "^15.5.12",
+    "cheerio": "^1.2.0",
+    "next": "^15.5.15",
     "next-auth": "^5.0.0-beta.25",
     "pg": "^8.13.3",
     "react": "^19.0.0",
@@ -26,8 +26,8 @@
     "@types/pg": "^8.11.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.2.1",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "15.5.15",
     "git-cz": "^4.9.0",
     "standard-version": "^9.5.0",
     "tailwindcss": "^4",
@@ -36,6 +36,14 @@
   "config": {
     "commitizen": {
       "path": "git-cz"
+    }
+  },
+  "pnpm": {
+    "overrides": {
+      "handlebars": "^4.7.9",
+      "lodash": "^4.18.0",
+      "postcss": "^8.5.10",
+      "undici": "^6.21.2"
     }
   }
 }
