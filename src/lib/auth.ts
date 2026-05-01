@@ -1,10 +1,11 @@
 import { auth } from '@/server/auth/config';
 import { NextResponse } from 'next/server';
-import { isAuthorizedEmail } from '@/lib/authorization';
 import { headers } from 'next/headers';
 
-// Re-export for backward compatibility
-export { isAuthorizedEmail, getAuthorizedEmails } from '@/lib/authorization';
+/**
+ * Authorization functions for protecting API routes.
+ * Uses NextAuth session from server/auth/config and additional email whitelist validation.
+ */
 
 /**
  * Gets the current server session
@@ -46,7 +47,7 @@ export const verifyCronAuth = async (): Promise<boolean> => {
  */
 export const requireAuth = async () => {
   const session = await getServerSession();
-  
+
   if (!session?.user?.email) {
     return {
       error: NextResponse.json(
@@ -57,14 +58,19 @@ export const requireAuth = async () => {
     };
   }
 
-  if (!isAuthorizedEmail(session.user.email)) {
-    return {
-      error: NextResponse.json(
-        { error: 'Forbidden: Email not authorized' },
-        { status: 403 }
-      ),
-      session: null
-    };
+  // Optional: Additional whitelist check - only block if AUTHORIZED_EMAILS is set
+  const authorizedEmails = process.env.AUTHORIZED_EMAILS;
+  if (authorizedEmails) {
+    const isAuthorized = authorizedEmails.split(',').map(e => e.trim().toLowerCase()).includes(session.user.email.toLowerCase());
+    if (!isAuthorized) {
+      return {
+        error: NextResponse.json(
+          { error: 'Forbidden: Email not authorized' },
+          { status: 403 }
+        ),
+        session: null
+      };
+    }
   }
 
   return {
@@ -88,7 +94,7 @@ export const requireAuthOrCron = async () => {
       isCron: true
     };
   }
-  
+
   // Otherwise, require user authentication
   const authResult = await requireAuth();
   return {
