@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pool, scrapeData, Listing } from '@/lib/utils';
+import { pool, scrapeData, Listing, InvalidScrapeUrlError } from '@/lib/utils';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: Request) {
@@ -95,6 +95,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ listings: listings.rows });
   } catch (error) {
+    if (error instanceof InvalidScrapeUrlError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error('Error:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }

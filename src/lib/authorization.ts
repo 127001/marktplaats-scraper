@@ -2,7 +2,7 @@
  * Gets the authorized emails from environment variable
  * @returns Array of authorized email addresses
  */
-export const getAuthorizedEmails = (): string[] => {
+const getAuthorizedEmails = (): string[] => {
   const emails = process.env.AUTHORIZED_EMAILS;
   if (!emails) {
     return [];

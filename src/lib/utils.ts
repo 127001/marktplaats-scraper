@@ -24,8 +24,40 @@ export interface Listing {
   isOffline: boolean;
 }
 
+export class InvalidScrapeUrlError extends Error {
+  constructor(message = 'URL must be a marktplaats.nl listing') {
+    super(message);
+    this.name = 'InvalidScrapeUrlError';
+  }
+}
+
+const isAllowedScrapeHost = (hostname: string): boolean => {
+  const host = hostname.toLowerCase();
+  return host === 'marktplaats.nl' || host.endsWith('.marktplaats.nl');
+};
+
+/** Rejects non-Marktplaats URLs before any outbound request (SSRF guard). */
+const assertAllowedScrapeUrl = (url: string): URL => {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new InvalidScrapeUrlError('Invalid URL');
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new InvalidScrapeUrlError('URL must use http or https');
+  }
+
+  if (!isAllowedScrapeHost(parsed.hostname)) {
+    throw new InvalidScrapeUrlError('URL must be a marktplaats.nl listing');
+  }
+
+  return parsed;
+};
+
 // Helper function to parse the date string (e.g., "22 feb. '25, 20:19")
-export const parsePublishingDate = (dateString: string | undefined): string | null => {
+const parsePublishingDate = (dateString: string | undefined): string | null => {
   if (!dateString) return null;
 
   // Replace abbreviated month names with full names
@@ -57,6 +89,7 @@ export const parsePublishingDate = (dateString: string | undefined): string | nu
 
 // Helper function to scrape data from a URL
 export const scrapeData = async (url: string): Promise<Listing> => {
+  assertAllowedScrapeUrl(url);
   const { data } = await axios.get(url);
   const $ = load(data);
 

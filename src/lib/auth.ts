@@ -11,7 +11,7 @@ import { headers } from 'next/headers';
  * Gets the current server session
  * @returns Session object or null if not authenticated
  */
-export const getServerSession = async () => {
+const getServerSession = async () => {
   return await auth();
 };
 
@@ -20,7 +20,7 @@ export const getServerSession = async () => {
  * Checks for x-vercel-cron header or CRON_SECRET header
  * @returns True if authenticated as a cron job, false otherwise
  */
-export const verifyCronAuth = async (): Promise<boolean> => {
+const verifyCronAuth = async (): Promise<boolean> => {
   const headersList = await headers();
   
   // Check for Vercel's automatic cron header
