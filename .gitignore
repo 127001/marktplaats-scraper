@@ -18,6 +18,7 @@ yarn.lock
 
 # IDEs and editors
 .idea
+.cursor
 
 # next.js
 /.next/
@@ -45,4 +46,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.idea/
