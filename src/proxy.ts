@@ -4,7 +4,7 @@ import { auth } from '@/server/auth/config';
 import { isAuthorizedEmail } from '@/lib/authorization';
 
 /**
- * Verifies Vercel cron job authentication in middleware context
+ * Verifies Vercel cron job authentication in proxy context
  * Checks for x-vercel-cron header or CRON_SECRET header
  * @param request - The NextRequest object with headers
  * @returns True if authenticated as a cron job, false otherwise
@@ -27,7 +27,7 @@ const verifyCronAuth = (request: NextRequest): boolean => {
   return false;
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow access to auth routes, signin page, access-denied page, and public assets
@@ -58,7 +58,7 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Check authentication
-    // In NextAuth v5, auth() in middleware automatically reads from request context
+    // In NextAuth v5, auth() in proxy automatically reads from request context
     const session = await auth();
 
     // If not authenticated, redirect to sign in
@@ -82,7 +82,7 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     // If auth fails, log and redirect to sign in for security
     // Never allow requests through when authentication fails
-    console.error('Middleware auth error:', error);
+    console.error('Proxy auth error:', error);
     const signInUrl = new URL('/signin', request.url);
     if (pathname !== '/') {
       signInUrl.searchParams.set('callbackUrl', pathname);
@@ -103,4 +103,3 @@ export const config = {
     '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
   ],
 };
-

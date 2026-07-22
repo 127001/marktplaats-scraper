@@ -1,0 +1,27 @@
+allowBuilds:
+  '@vercel/speed-insights': true
+  sharp: true
+
+minimumReleaseAgeExclude:
+  - '@next/env@16.2.11'
+  - '@next/eslint-plugin-next@16.2.11'
+  - '@next/swc-darwin-arm64@16.2.11'
+  - '@next/swc-darwin-x64@16.2.11'
+  - '@next/swc-linux-arm64-gnu@16.2.11'
+  - '@next/swc-linux-arm64-musl@16.2.11'
+  - '@next/swc-linux-x64-gnu@16.2.11'
+  - '@next/swc-linux-x64-musl@16.2.11'
+  - '@next/swc-win32-arm64-msvc@16.2.11'
+  - '@next/swc-win32-x64-msvc@16.2.11'
+  - eslint-config-next@16.2.11
+  - next@16.2.11
+
+onlyBuiltDependencies:
+  - '@vercel/speed-insights'
+  - sharp
+
+overrides:
+  handlebars: ^4.7.9
+  lodash: ^4.18.0
+  postcss: ^8.5.10
+  undici: ^6.21.2
