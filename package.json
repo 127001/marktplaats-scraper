@@ -6,44 +6,35 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint",
     "release": "standard-version"
   },
   "dependencies": {
-    "@vercel/speed-insights": "^1.2.0",
-    "axios": "^1.16.0",
+    "@vercel/speed-insights": "^2.0.0",
+    "axios": "^1.18.1",
     "cheerio": "^1.2.0",
-    "next": "^15.5.16",
-    "next-auth": "^5.0.0-beta.25",
-    "pg": "^8.13.3",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "^16.2.11",
+    "next-auth": "^5.0.0-beta.30",
+    "pg": "^8.22.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/pg": "^8.11.11",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "eslint": "^9.39.4",
-    "eslint-config-next": "15.5.16",
+    "eslint-config-next": "^16.2.11",
     "git-cz": "^4.9.0",
     "standard-version": "^9.5.0",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5"
   },
   "config": {
     "commitizen": {
       "path": "git-cz"
-    }
-  },
-  "pnpm": {
-    "overrides": {
-      "handlebars": "^4.7.9",
-      "lodash": "^4.18.0",
-      "postcss": "^8.5.10",
-      "undici": "^6.21.2"
     }
   }
 }
